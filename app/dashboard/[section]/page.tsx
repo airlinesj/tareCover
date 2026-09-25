@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { CheckoutWidget } from "@/components/checkout-widget";
 import { WorkspaceSection } from "@/components/workspace-section";
+import { WorkspaceTools } from "@/components/workspace-tools";
 
 const sections = {
   policies: {
@@ -67,5 +68,5 @@ export default async function WorkspaceSectionPage({ params }: { params: Promise
   const { section } = await params;
   const page = sections[section as keyof typeof sections];
   if (!page) notFound();
-  return <WorkspaceSection active={`/dashboard/${section}`} {...page}>{section === "checkout" && <div className="section-widget"><CheckoutWidget /></div>}</WorkspaceSection>;
+  return <WorkspaceSection active={`/dashboard/${section}`} {...page}>{section === "checkout" && <div className="section-widget"><CheckoutWidget /></div>}{["policies", "claims", "traders", "capture"].includes(section) && <WorkspaceTools section={section} />}</WorkspaceSection>;
 }
