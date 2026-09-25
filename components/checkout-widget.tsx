@@ -17,11 +17,25 @@ export function CheckoutWidget() {
   const [category, setCategory] = useState<StockCategory>("general_apparel_footwear");
   const [isVouched, setIsVouched] = useState(false);
   const [restockingStreak, setRestockingStreak] = useState(1);
+  const [traderPhone, setTraderPhone] = useState("+263771234567");
+  const [optInHealthMicroVoucher, setOptInHealthMicroVoucher] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState("");
   const [isAdded, setIsAdded] = useState(false);
 
   const plan = plans[selectedPlan];
   const pricing = useMemo(() => calculatePremium({ batchValue: Math.max(50, stockValue), category, isVouchedByMarketAssociation: isVouched, restockingStreakConsistency: restockingStreak }), [category, isVouched, restockingStreak, stockValue]);
   const premium = Math.max(1, Math.round(pricing.calculatedMicroPremium * plan.multiplier));
+
+  async function addProtection() {
+    setCheckoutMessage("Processing checkout...");
+    try {
+      const response = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ traderPhone, batchValue: stockValue, stockCategory: category === "fresh_produce" ? "general_apparel_footwear" : category, isVouchedByMarketAssociation: isVouched, optInHealthMicroVoucher }) });
+      const result = await response.json() as { error?: string; totalInvoicedLevy?: number; healthMicroVoucherFee?: number; generatedDigitalHealthToken?: { tokenCode: string } };
+      if (!response.ok) throw new Error(result.error ?? "Checkout could not be processed.");
+      setIsAdded(true);
+      setCheckoutMessage(`Mobile-money push prompt sent. Checkout processed at US$ ${result.totalInvoicedLevy?.toFixed(2)}.${result.generatedDigitalHealthToken ? ` Health token ${result.generatedDigitalHealthToken.tokenCode} generated.` : ""}`);
+    } catch (error) { setCheckoutMessage(error instanceof Error ? error.message : "Checkout could not be processed."); }
+  }
 
   return (
     <section className="widget-panel" aria-labelledby="widget-title">
@@ -109,6 +123,12 @@ export function CheckoutWidget() {
                 <label className="pricing-streak" htmlFor="restocking-streak">Restocking consistency <strong>{restockingStreak}/5</strong><input id="restocking-streak" type="range" min="1" max="5" step="1" value={restockingStreak} onChange={(event) => setRestockingStreak(Number(event.target.value))} /></label>
               </div>
 
+              <div className="field-group">
+                <label htmlFor="trader-phone">Trader phone for receipt</label>
+                <div className="currency-input"><input id="trader-phone" type="tel" value={traderPhone} onChange={(event) => setTraderPhone(event.target.value)} placeholder="+263771234567" /></div>
+                <label className="pricing-check health-opt-in"><input type="checkbox" checked={optInHealthMicroVoucher} onChange={(event) => setOptInHealthMicroVoucher(event.target.checked)} /> Add CellMed / Nectacare health voucher <strong>+ US$ {stockValue <= 500 ? "0.50" : "1.00"}</strong></label>
+              </div>
+
               <div className="premium-summary">
                 <div><span className="summary-label">Cover for this purchase</span><strong>US$ {stockValue.toLocaleString()}</strong></div>
                 <div className="premium-amount"><span>+ US$</span><motion.strong key={premium} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>{premium.toLocaleString()}</motion.strong><small>premium</small></div>
@@ -116,8 +136,8 @@ export function CheckoutWidget() {
 
               <div className="benchmark-summary"><span>Traditional annual benchmark</span><strong>US$ {pricing.traditionalInsuranceCostComparison.estimatedTraditionalAnnualCost.low.toLocaleString()}–{pricing.traditionalInsuranceCostComparison.estimatedTraditionalAnnualCost.high.toLocaleString()}</strong><small>{pricing.traditionalInsuranceCostComparison.tareCoverCashFlowContrast}</small></div>
 
-              <button type="button" className="primary-action" onClick={() => setIsAdded(true)}>{isAdded ? "Protection added" : "Add protection"} {isAdded ? <Check size={16} /> : <ArrowUpRight size={16} />}</button>
-              <p className="widget-footnote"><Sparkles size={13} /> {isAdded ? "Certificate ready for this invoice" : "Certificate issued instantly after payment"}</p>
+              <button type="button" className="primary-action" onClick={addProtection}>{isAdded ? "Checkout processed" : "Process checkout"} {isAdded ? <Check size={16} /> : <ArrowUpRight size={16} />}</button>
+              <p className="widget-footnote"><Sparkles size={13} /> {checkoutMessage || (isAdded ? "Certificate ready for this invoice" : "Certificate issued instantly after payment")}</p>
             </motion.div>
           ) : (
             <motion.div key="disabled" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="disabled-state">

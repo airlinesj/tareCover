@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BriefcaseBusiness, Camera, ChevronDown, CircleHelp, FileCheck2, LayoutDashboard, MoreHorizontal, ShieldCheck, Users } from "lucide-react";
+import { BriefcaseBusiness, Camera, ChevronDown, CircleHelp, FileCheck2, HeartPulse, LayoutDashboard, MoreHorizontal, ShieldCheck, Users } from "lucide-react";
 import { Brand } from "@/components/brand";
 
 export const workspaceLinks = [
@@ -9,6 +9,7 @@ export const workspaceLinks = [
   { href: "/dashboard/traders", label: "Traders", icon: Users },
   { href: "/dashboard/capture", label: "Stock capture", icon: Camera },
   { href: "/dashboard/checkout", label: "Checkout widget", icon: BriefcaseBusiness },
+  { href: "/dashboard/health", label: "Health insurance", icon: HeartPulse },
   { href: "/dashboard/help", label: "Help centre", icon: CircleHelp },
 ];
 
@@ -25,9 +26,9 @@ export function WorkspaceSidebar({ active = "/dashboard" }: WorkspaceNavProps) {
         <p className="nav-label">Workspace</p>
         {workspaceLinks.slice(0, 4).map((item) => <WorkspaceLink key={item.href} item={item} active={active} />)}
         <p className="nav-label nav-label-spaced">Tools</p>
-        {workspaceLinks.slice(4, 6).map((item) => <WorkspaceLink key={item.href} item={item} active={active} />)}
+        {workspaceLinks.slice(4, 7).map((item) => <WorkspaceLink key={item.href} item={item} active={active} />)}
       </nav>
-      <div className="sidebar-bottom"><WorkspaceLink item={workspaceLinks[6]} active={active} /><div className="user-profile"><div className="avatar avatar-ink">TM</div><div><strong>Tendai M.</strong><small>Administrator</small></div><MoreHorizontal size={17} /></div></div>
+      <div className="sidebar-bottom"><WorkspaceLink item={workspaceLinks[7]} active={active} /><div className="user-profile"><div className="avatar avatar-ink">TM</div><div><strong>Tendai M.</strong><small>Administrator</small></div><MoreHorizontal size={17} /></div></div>
     </aside>
   );
 }
