@@ -54,6 +54,7 @@ function CaptureTool() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraState, setCameraState] = useState<"idle" | "checking" | "ready" | "denied">("idle");
+  const [isVerifying, setIsVerifying] = useState(false);
   const [message, setMessage] = useState("Use a live camera capture so the evidence has a verifiable origin.");
 
   async function startCamera() {
@@ -69,7 +70,18 @@ function CaptureTool() {
 
   function stopCamera() { streamRef.current?.getTracks().forEach((track) => track.stop()); streamRef.current = null; setCameraState("idle"); setMessage("Camera stopped. Start again when the stock is in frame."); }
 
-  return <div className="capture-tool"><div className="tool-heading"><div><p className="eyebrow">Evidence integrity</p><h2>Verify stock before cover</h2><p>Capture live evidence with device, time, and market signals attached. Verification is designed for a Google Cloud backend using Vision and Vertex AI checks.</p></div><span className="security-badge"><ShieldCheck size={14} /> Secure capture</span></div><div className="capture-grid"><div className="camera-stage">{cameraState === "ready" ? <video ref={videoRef} autoPlay playsInline muted /> : <div className="camera-placeholder"><Camera size={30} /><span>{cameraState === "checking" ? "Checking camera access..." : "Camera preview"}</span></div>}{cameraState === "ready" ? <ActionButton icon={<X size={14} />} onClick={stopCamera}>Stop camera</ActionButton> : <ActionButton icon={<Camera size={14} />} onClick={startCamera}>Start live capture</ActionButton>}</div><div className="verification-panel"><p className="eyebrow">Verification chain</p><VerificationRow icon={<Fingerprint size={16} />} title="Device attestation" detail="Bind capture to a registered device" /><VerificationRow icon={<MapPin size={16} />} title="Time + market location" detail="Compare against policy and stall record" /><VerificationRow icon={<ScanLine size={16} />} title="Google Vision / Vertex AI" detail="Server checks for manipulation, replay, and inconsistent stock" /><div className={`capture-message capture-message-${cameraState}`} role="status">{message}</div><ActionButton icon={<RefreshCw size={14} />} onClick={() => setMessage("Verification request queued. A trusted backend must issue the final evidence verdict.")}>Run verification</ActionButton></div></div><p className="capture-note">A browser alone cannot prove that a video is genuine or that stock is not counterfeit. The production API should require an attested live capture, signed metadata, replay detection, and human review before accepting a claim.</p></div>;
+  async function runVerification() {
+    setIsVerifying(true);
+    setMessage("Sending capture to the demo verification API...");
+    try {
+      const response = await fetch("/api/verification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ captureId: `CAP-${Date.now()}`, camera: cameraState }) });
+      const result = await response.json() as { message?: string; captureId?: string };
+      setMessage(`${result.message ?? "Demo verification complete."} ID: ${result.captureId ?? "unknown"}.`);
+    } catch { setMessage("The demo verification API could not be reached. Try again."); }
+    finally { setIsVerifying(false); }
+  }
+
+  return <div className="capture-tool"><div className="tool-heading"><div><p className="eyebrow">Demo verification</p><h2>Verify stock before cover</h2><p>Capture live evidence with device, time, and market signals attached. This workspace uses a dummy API so the full verification flow can be tested safely.</p></div><span className="security-badge"><ShieldCheck size={14} /> Demo API</span></div><div className="capture-grid"><div className="camera-stage">{cameraState === "ready" ? <video ref={videoRef} autoPlay playsInline muted /> : <div className="camera-placeholder"><Camera size={30} /><span>{cameraState === "checking" ? "Checking camera access..." : "Camera preview"}</span></div>}{cameraState === "ready" ? <ActionButton icon={<X size={14} />} onClick={stopCamera}>Stop camera</ActionButton> : <ActionButton icon={<Camera size={14} />} onClick={startCamera}>Start live capture</ActionButton>}</div><div className="verification-panel"><p className="eyebrow">Verification chain</p><VerificationRow icon={<Fingerprint size={16} />} title="Device attestation" detail="Bind capture to a registered device" /><VerificationRow icon={<MapPin size={16} />} title="Time + market location" detail="Compare against policy and stall record" /><VerificationRow icon={<ScanLine size={16} />} title="Dummy AI review" detail="Simulate manipulation, replay, and stock consistency checks" /><div className={`capture-message capture-message-${cameraState}`} role="status">{message}</div><ActionButton icon={<RefreshCw size={14} />} onClick={runVerification}>{isVerifying ? "Running demo check..." : "Run demo verification"}</ActionButton></div></div><p className="capture-note">Demo mode is active. The API returns sample pass results for local testing and does not make a real authenticity or counterfeit determination.</p></div>;
 }
 
 function VerificationRow({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) { return <div className="verification-row"><span className="verification-icon">{icon}</span><span><strong>{title}</strong><small>{detail}</small></span><CheckCircle2 size={15} /></div>; }
